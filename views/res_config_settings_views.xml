@@ -61,6 +61,9 @@
 {{ quedan.payment_days }}
 {{ quedan.payment_date }}
 {{ quedan.memo }}
+{{ quedan.documents_total }}
+{{ quedan.documents_source }}   → manual / automatic / none
+{% if quedan.documents_mismatch %} ... {% endif %}
 {% if quedan.is_canceled %}*** ANULADO ***{% endif %}</pre>
                                 <p class="mb-1"><strong>COPIA</strong></p>
                                 <pre class="mb-2">{{ copy.label }}   → ORIGINAL / COPIA</pre>
@@ -78,6 +81,8 @@
                                     Las variables inexistentes se imprimen vacías. Los datos se escapan
                                     automáticamente (no se interpreta HTML proveniente de registros).
                                     Dentro de un for están disponibles loop.index, loop.first y loop.last.
+                                    Si el pago tiene documentos manuales, documents contiene solo esos;
+                                    si no, las facturas relacionadas contablemente con el pago.
                                     Vista previa guarda primero la plantilla y usa datos de ejemplo:
                                     no consume correlativos ni modifica pagos.
                                 </p>

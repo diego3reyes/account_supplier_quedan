@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_supplier_quedan_document_readonly,account.supplier.quedan.document readonly,model_account_supplier_quedan_document,account.group_account_readonly,1,0,0,0
+access_account_supplier_quedan_document,account.supplier.quedan.document,model_account_supplier_quedan_document,account.group_account_invoice,1,1,1,1

@@ -31,6 +31,25 @@ class AccountPayment(models.Model):
              "Las reimpresiones conservan el mismo número.",
     )
 
+    # Documentos manuales: solo informativos para el Quedan. No se vinculan
+    # con account.move ni tocan invoice_ids / reconciled_bill_ids / importes.
+    supplier_quedan_document_ids = fields.One2many(
+        comodel_name='account.supplier.quedan.document',
+        inverse_name='payment_id',
+        string="Documentos del Quedan",
+        copy=False,
+    )
+    supplier_quedan_manual_documents_total = fields.Monetary(
+        string="Total documentos",
+        currency_field='currency_id',
+        compute='_compute_supplier_quedan_manual_documents',
+    )
+    supplier_quedan_documents_mismatch = fields.Boolean(
+        string="Diferencia en documentos del Quedan",
+        compute='_compute_supplier_quedan_manual_documents',
+        help="Informativo: hay documentos manuales y su suma no coincide con el importe del pago.",
+    )
+
     _supplier_quedan_days_positive = models.Constraint(
         'CHECK(supplier_quedan_days >= 0)',
         'Los días para pago del Quedan no pueden ser negativos.',
@@ -40,6 +59,20 @@ class AccountPayment(models.Model):
     def _check_supplier_quedan_days(self):
         if any(payment.supplier_quedan_days < 0 for payment in self):
             raise ValidationError(_("Los días para pago del Quedan no pueden ser negativos."))
+
+    @api.depends('supplier_quedan_document_ids.amount', 'amount', 'currency_id', 'company_id')
+    def _compute_supplier_quedan_manual_documents(self):
+        for payment in self:
+            lines = payment.supplier_quedan_document_ids
+            total = sum(lines.mapped('amount'))
+            currency = payment.currency_id or payment.company_id.currency_id
+            payment.supplier_quedan_manual_documents_total = total
+            # compare_amounts redondea con la precisión de la moneda: evita
+            # falsas diferencias por aritmética de coma flotante.
+            payment.supplier_quedan_documents_mismatch = bool(lines) and (
+                currency.compare_amounts(total, payment.amount) != 0
+                if currency else total != payment.amount
+            )
 
     # -------------------------------------------------------------------------
     # CHECKS & NUMBERING
@@ -119,7 +152,57 @@ class AccountPayment(models.Model):
     # RENDERING CONTEXT
     # -------------------------------------------------------------------------
 
+    def _get_supplier_quedan_documents_info(self):
+        """Documentos que usa el Quedan y su origen.
+
+        Prioridad (sin mezclar fuentes, para no duplicar si luego el pago se
+        concilia con una factura):
+        A. Si hay documentos manuales: SOLO los manuales.
+        B. Si no: la lógica automática basada en reconciled_bill_ids.
+        C. Si ninguna fuente tiene documentos: [].
+        La diferencia contra el importe del pago solo se calcula para los
+        manuales; con facturas el pago puede ser parcial.
+        """
+        self.ensure_one()
+        lines = self.supplier_quedan_document_ids.sorted(lambda line: (line.sequence, line.id))
+        if lines:
+            currency = self.currency_id or self.company_id.currency_id
+            return {
+                'source': 'manual',
+                'documents': [self._supplier_quedan_manual_document_values(line) for line in lines],
+                'total': format_amount(self.env, sum(lines.mapped('amount')), currency),
+                'mismatch': self.supplier_quedan_documents_mismatch,
+            }
+        moves = self._get_supplier_quedan_automatic_moves()
+        if moves:
+            currencies = moves.currency_id
+            total = sum((-1 if move.move_type == 'in_refund' else 1) * move.amount_total for move in moves)
+            return {
+                'source': 'automatic',
+                'documents': [self._supplier_quedan_move_document_values(move) for move in moves],
+                # Con monedas distintas no hay un total único que mostrar.
+                'total': format_amount(self.env, total, currencies) if len(currencies) == 1 else '',
+                'mismatch': False,
+            }
+        return {'source': 'none', 'documents': [], 'total': '', 'mismatch': False}
+
     def _get_supplier_quedan_documents(self):
+        """Lista de documentos (dicts) que se imprimen en el Quedan."""
+        self.ensure_one()
+        return self._get_supplier_quedan_documents_info()['documents']
+
+    def _supplier_quedan_manual_document_values(self, line):
+        currency = line.currency_id or self.currency_id or self.company_id.currency_id
+        return {
+            'number': line.number or '',
+            'reference': line.reference or '',
+            'date': format_date(self.env, line.date) if line.date else '',
+            'amount': format_amount(self.env, line.amount, currency),
+            'currency': currency.name or '',
+            'type': 'manual',
+        }
+
+    def _get_supplier_quedan_automatic_moves(self):
         """Documentos de proveedor relacionados de forma fiable con el pago.
 
         Se usa ``reconciled_bill_ids`` estándar de Odoo 19, que une:
@@ -127,25 +210,24 @@ class AccountPayment(models.Model):
           aun en borrador, antes de generar asiento), y
         - las facturas conciliadas contra el asiento del pago.
         Solo contiene documentos de compra (in_invoice, in_refund, in_receipt).
-        Un pago manual en borrador sin facturas vinculadas devuelve [].
+        Un pago manual en borrador sin facturas vinculadas no devuelve nada.
         """
         self.ensure_one()
-        moves = self.reconciled_bill_ids.filtered(
+        return self.reconciled_bill_ids.filtered(
             lambda move: move.state != 'cancel' and move.company_id == self.company_id
         ).sorted(lambda move: (move.invoice_date or move.date or fields.Date.today(), move.name or ''))
-        documents = []
-        for move in moves:
-            sign = -1 if move.move_type == 'in_refund' else 1
-            doc_date = move.invoice_date or move.date
-            documents.append({
-                'number': move.name if move.name and move.name != '/' else '',
-                'reference': move.ref or '',
-                'date': format_date(self.env, doc_date) if doc_date else '',
-                'amount': format_amount(self.env, sign * move.amount_total, move.currency_id),
-                'currency': move.currency_id.name or '',
-                'type': move.move_type or '',
-            })
-        return documents
+
+    def _supplier_quedan_move_document_values(self, move):
+        sign = -1 if move.move_type == 'in_refund' else 1
+        doc_date = move.invoice_date or move.date
+        return {
+            'number': move.name if move.name and move.name != '/' else '',
+            'reference': move.ref or '',
+            'date': format_date(self.env, doc_date) if doc_date else '',
+            'amount': format_amount(self.env, sign * move.amount_total, move.currency_id),
+            'currency': move.currency_id.name or '',
+            'type': move.move_type or '',
+        }
 
     def _get_supplier_quedan_context(self):
         """Contexto común de ORIGINAL y COPIA (todo sale del propio pago)."""
@@ -158,7 +240,8 @@ class AccountPayment(models.Model):
         # escribe en ningún campo del pago, factura o asiento.
         estimated_date = issue_date + timedelta(days=days) if issue_date else False
         currency = self.currency_id or company.currency_id
-        documents = self._get_supplier_quedan_documents()
+        documents_info = self._get_supplier_quedan_documents_info()
+        documents = documents_info['documents']
         return {
             'company': company._get_supplier_quedan_company_values(),
             'supplier': {
@@ -180,6 +263,9 @@ class AccountPayment(models.Model):
                 'reference': self.payment_reference or '',
                 'payment_number': self.name if self.name and self.name != '/' and self.state != 'draft' else '',
                 'documents_count': len(documents),
+                'documents_source': documents_info['source'],
+                'documents_total': documents_info['total'],
+                'documents_mismatch': documents_info['mismatch'],
                 'is_canceled': self.state in SUPPLIER_QUEDAN_CANCELED_STATES,
             },
             'documents': documents,

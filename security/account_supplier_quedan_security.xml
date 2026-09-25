@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Misma regla multiempresa que account.payment (account_payment_comp_rule):
+         la línea pertenece a la empresa de su pago. -->
+    <record id="account_supplier_quedan_document_comp_rule" model="ir.rule">
+        <field name="name">Documento manual del Quedan: multiempresa</field>
+        <field name="model_id" ref="model_account_supplier_quedan_document"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
