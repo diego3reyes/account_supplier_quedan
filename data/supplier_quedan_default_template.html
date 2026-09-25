@@ -1,0 +1,92 @@
+<!--
+    Plantilla predeterminada del Quedan.
+    Representa UN SOLO Quedan: el sistema la imprime automáticamente dos veces
+    en la misma hoja (ORIGINAL arriba y COPIA abajo). No duplique este HTML.
+    Mantenga el contenido dentro de media hoja carta (aprox. 12 cm de alto).
+    Con este diseño caben con seguridad unos 9 documentos (menos con logo o
+    textos largos). Si se excede, la COPIA pasa completa a la hoja siguiente.
+-->
+<div style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #222; line-height: 1.3;">
+    {% if quedan.is_canceled %}
+    <div style="border: 2px solid #c00000; color: #c00000; font-size: 14px; font-weight: bold; text-align: center; letter-spacing: 3px; padding: 2px; margin-bottom: 4px;">*** ANULADO ***</div>
+    {% endif %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 60%; vertical-align: top;">
+                {% if company.logo %}<div style="margin-bottom: 3px;">{{ company.logo }}</div>{% endif %}
+                <div style="font-size: 13px; font-weight: bold;">{{ company.name }}</div>
+                {% if company.nit %}<div>NIT: {{ company.nit }}</div>{% endif %}
+                {% if company.nrc %}<div>NRC: {{ company.nrc }}</div>{% endif %}
+                {% if company.address %}<div>{{ company.address }}</div>{% endif %}
+                {% if company.phone %}<div>Tel.: {{ company.phone }}</div>{% endif %}
+                {% if company.email %}<div>{{ company.email }}</div>{% endif %}
+            </td>
+            <td style="width: 40%; vertical-align: top; text-align: right;">
+                <div style="font-size: 11px; font-weight: bold; letter-spacing: 2px;">{{ copy.label }}</div>
+                <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">QUEDAN</div>
+                <div style="font-size: 12px;">No. <strong>{{ quedan.number }}</strong></div>
+                <div style="margin-top: 4px;">Fecha: {{ quedan.date }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px; border: 1px solid #999;">
+        <tr>
+            <td style="padding: 4px; vertical-align: top;">
+                <strong>Proveedor:</strong> {{ supplier.name }}
+                {% if supplier.nit %}&#160;&#160;<strong>NIT:</strong> {{ supplier.nit }}{% endif %}
+                {% if supplier.nrc %}&#160;&#160;<strong>NRC:</strong> {{ supplier.nrc }}{% endif %}
+                {% if supplier.address %}<br/><strong>Dirección:</strong> {{ supplier.address }}{% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th style="border: 1px solid #999; padding: 3px; text-align: left;">Documento</th>
+                <th style="border: 1px solid #999; padding: 3px; text-align: left;">Referencia</th>
+                <th style="border: 1px solid #999; padding: 3px; text-align: left;">Fecha</th>
+                <th style="border: 1px solid #999; padding: 3px; text-align: right;">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td style="border: 1px solid #999; padding: 3px;">{{ doc.number }}</td>
+                <td style="border: 1px solid #999; padding: 3px;">{{ doc.reference }}</td>
+                <td style="border: 1px solid #999; padding: 3px;">{{ doc.date }}</td>
+                <td style="border: 1px solid #999; padding: 3px; text-align: right;">{{ doc.amount }}</td>
+            </tr>
+            {% endfor %}
+            {% if not documents %}
+            <tr>
+                <td colspan="4" style="border: 1px solid #999; padding: 3px; color: #777;">Sin documentos relacionados.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="border: 1px solid #999; padding: 3px; text-align: right;"><strong>Total</strong></td>
+                <td style="border: 1px solid #999; padding: 3px; text-align: right;"><strong>{{ quedan.amount }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+                <div><strong>Días para pago:</strong> {{ quedan.payment_days }}</div>
+                <div><strong>Fecha estimada de pago:</strong> {{ quedan.payment_date }}</div>
+                {% if quedan.memo %}<div><strong>Memo / referencia:</strong> {{ quedan.memo }}</div>{% endif %}
+            </td>
+            <td style="width: 50%; vertical-align: bottom; text-align: center;">
+                <div style="border-top: 1px solid #222; margin: 28px 20px 0 20px; padding-top: 2px;">Firma / Sello de recibido</div>
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 6px; font-size: 9px; color: #555;">
+        Este documento hace constar únicamente la recepción de los documentos detallados y no constituye comprobante de pago.
+    </div>
+</div>

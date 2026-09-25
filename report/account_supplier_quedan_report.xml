@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Carta vertical. Márgenes pequeños y sin smart shrinking/DPI 96 para
+         que los milímetros del CSS correspondan a milímetros reales:
+         279.4 - 8 - 8 = 263.4 mm útiles = 2 x 124 mm + 10 mm de línea de corte. -->
+    <record id="paperformat_supplier_quedan" model="report.paperformat">
+        <field name="name">Quedan de Proveedor - Carta vertical</field>
+        <field name="default" eval="False"/>
+        <field name="format">Letter</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">8</field>
+        <field name="margin_bottom">8</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="disable_shrinking" eval="True"/>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_supplier_quedan" model="ir.actions.report">
+        <field name="name">Quedan de Proveedor</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">account_supplier_quedan.report_supplier_quedan</field>
+        <field name="report_file">account_supplier_quedan.report_supplier_quedan</field>
+        <field name="print_report_name">'Quedan - %s' % (object.supplier_quedan_number or object.name or '')</field>
+        <field name="paperformat_id" ref="paperformat_supplier_quedan"/>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_supplier_quedan_preview" model="ir.actions.report">
+        <field name="name">Vista previa del Quedan</field>
+        <field name="model">res.company</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">account_supplier_quedan.report_supplier_quedan_preview</field>
+        <field name="report_file">account_supplier_quedan.report_supplier_quedan_preview</field>
+        <field name="print_report_name">'Quedan - Vista previa'</field>
+        <field name="paperformat_id" ref="paperformat_supplier_quedan"/>
+    </record>
+</odoo>

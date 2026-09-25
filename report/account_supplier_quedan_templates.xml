@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Capa externa: controla la hoja, ORIGINAL, línea de corte y COPIA.
+         La plantilla editable (Ajustes) solo controla el contenido interno
+         de un Quedan y llega ya renderizada y escapada como Markup. -->
+    <template id="report_supplier_quedan_sheet">
+        <div class="page o_asq_page">
+            <style>
+                .o_asq_page { margin: 0; padding: 0; }
+                /* min-height (no height/overflow:hidden): si una plantilla
+                   excede media hoja el contenido no se oculta, se desplaza. */
+                .o_asq_half { min-height: 124mm; page-break-inside: avoid; }
+                .o_asq_cut { height: 10mm; page-break-inside: avoid; text-align: center; }
+                .o_asq_cut_line { border-top: 1px dashed #777777; margin-top: 5mm; height: 0; }
+                .o_asq_cut_label { display: inline-block; position: relative; top: -2.2mm; padding: 0 3mm;
+                                   background-color: #ffffff; color: #777777; font-size: 7pt; letter-spacing: 2px;
+                                   font-family: Arial, Helvetica, sans-serif; }
+            </style>
+            <div class="o_asq_half o_asq_original">
+                <t t-out="sheet['original']"/>
+            </div>
+            <div class="o_asq_cut">
+                <div class="o_asq_cut_line"/>
+                <span class="o_asq_cut_label">- - - CORTAR - - -</span>
+            </div>
+            <div class="o_asq_half o_asq_copy">
+                <t t-out="sheet['copy']"/>
+            </div>
+        </div>
+    </template>
+
+    <template id="report_supplier_quedan">
+        <t t-call="web.html_container">
+            <!-- Un article por registro = una hoja por pago. -->
+            <t t-foreach="docs" t-as="o">
+                <t t-set="sheet" t-value="quedan_sheets[o_index]"/>
+                <div class="article" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id"
+                     t-att-data-oe-lang="o.env.context.get('lang')">
+                    <t t-call="account_supplier_quedan.report_supplier_quedan_sheet"/>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_supplier_quedan_preview">
+        <t t-call="account_supplier_quedan.report_supplier_quedan"/>
+    </template>
+</odoo>

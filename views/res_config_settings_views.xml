@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_supplier_quedan" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.account_supplier_quedan</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']" position="inside">
+                <block title="Quedan de Proveedores" id="account_supplier_quedan_settings">
+                    <setting id="account_supplier_quedan_template_setting" string="Plantilla del Quedan"
+                             company_dependent="1"
+                             help="Diseño HTML del Quedan de la empresa activa. Cada empresa tiene su propia plantilla.">
+                        <div class="content-group">
+                            <div class="mt8">
+                                <button name="action_preview_supplier_quedan" type="object"
+                                        string="Vista previa" icon="fa-eye" class="btn-link"/>
+                                <button name="action_restore_supplier_quedan_template" type="object"
+                                        string="Restaurar plantilla predeterminada" icon="fa-undo" class="btn-link"
+                                        confirm="Se reemplazará la plantilla del Quedan de la empresa activa por la plantilla predeterminada del módulo. Las demás empresas no se modifican. ¿Desea continuar?"/>
+                            </div>
+                        </div>
+                    </setting>
+                    <div class="col-12 o_setting_box" id="account_supplier_quedan_template_editor">
+                        <div class="row">
+                            <div class="col-12 col-lg-8">
+                                <field name="supplier_quedan_template" widget="code" options="{'mode': 'qweb'}"
+                                       class="w-100"/>
+                            </div>
+                            <div class="col-12 col-lg-4 small">
+                                <div class="alert alert-info mb-2" role="status">
+                                    Esta plantilla representa <strong>UN SOLO Quedan</strong>.
+                                    El sistema la imprime automáticamente dos veces en la misma hoja carta:
+                                    arriba como <strong>ORIGINAL</strong> y abajo como <strong>COPIA</strong>,
+                                    separadas por una línea de corte. No duplique el HTML.
+                                    Una sola hoja solo se logra si cada copia cabe en media hoja (aprox. 12 cm de alto):
+                                    con la plantilla predeterminada, unos <strong>9 documentos</strong> como máximo seguro
+                                    (menos con logo o textos largos). Si se excede, la COPIA pasa completa a la hoja
+                                    siguiente; los documentos nunca se ocultan ni se recortan.
+                                </div>
+                                <p class="mb-1"><strong>EMPRESA</strong> (del pago)</p>
+                                <pre class="mb-2">{{ company.name }}
+{{ company.nit }}
+{{ company.nrc }}
+{{ company.address }}
+{{ company.street }}
+{{ company.phone }}
+{{ company.email }}
+{{ company.logo }}</pre>
+                                <p class="mb-1"><strong>PROVEEDOR</strong></p>
+                                <pre class="mb-2">{{ supplier.name }}
+{{ supplier.nit }}
+{{ supplier.nrc }}
+{{ supplier.address }}
+{{ supplier.phone }}
+{{ supplier.email }}</pre>
+                                <p class="mb-1"><strong>QUEDAN</strong></p>
+                                <pre class="mb-2">{{ quedan.number }}
+{{ quedan.date }}
+{{ quedan.amount }}
+{{ quedan.currency }}
+{{ quedan.payment_days }}
+{{ quedan.payment_date }}
+{{ quedan.memo }}
+{% if quedan.is_canceled %}*** ANULADO ***{% endif %}</pre>
+                                <p class="mb-1"><strong>COPIA</strong></p>
+                                <pre class="mb-2">{{ copy.label }}   → ORIGINAL / COPIA</pre>
+                                <p class="mb-1"><strong>DOCUMENTOS</strong></p>
+                                <pre class="mb-2">{% for doc in documents %}
+  {{ doc.number }}
+  {{ doc.reference }}
+  {{ doc.date }}
+  {{ doc.amount }}
+{% endfor %}</pre>
+                                <p class="mb-1"><strong>CONDICIONES</strong></p>
+                                <pre class="mb-2">{% if supplier.nit %} ... {% else %} ... {% endif %}
+{% if not documents %} ... {% endif %}</pre>
+                                <p class="text-muted mb-0">
+                                    Las variables inexistentes se imprimen vacías. Los datos se escapan
+                                    automáticamente (no se interpreta HTML proveniente de registros).
+                                    Dentro de un for están disponibles loop.index, loop.first y loop.last.
+                                    Vista previa guarda primero la plantilla y usa datos de ejemplo:
+                                    no consume correlativos ni modifica pagos.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

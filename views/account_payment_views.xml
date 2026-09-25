@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_payment_form_supplier_quedan" model="ir.ui.view">
+        <field name="name">account.payment.form.account_supplier_quedan</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+            <!-- Pago a proveedor = partner_type 'supplier' + payment_type 'outbound'
+                 (un reembolso de proveedor es 'inbound' y no lleva Quedan). -->
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_print_supplier_quedan" string="Imprimir Quedan" type="object"
+                        icon="fa-print"
+                        invisible="partner_type != 'supplier' or payment_type != 'outbound' or (state in ('canceled', 'rejected') and not supplier_quedan_number)"/>
+            </xpath>
+            <xpath expr="//group[@name='group1']/field[@name='memo']" position="after">
+                <field name="supplier_quedan_days"
+                       invisible="partner_type != 'supplier' or payment_type != 'outbound'"/>
+                <field name="supplier_quedan_number"
+                       invisible="partner_type != 'supplier' or payment_type != 'outbound' or not supplier_quedan_number"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
